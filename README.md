@@ -1,4 +1,4 @@
-  Enter in info about a target, and the script will fill out the most common initial enumeration commands for you! 
+  Enter info about a target, and the script will fill out the most common initial enumeration commands for you! 
 ```
  # Zone transfer (Unlikely with AD)
 dig axfr htb.local @10.10.10.161
