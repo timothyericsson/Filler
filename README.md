@@ -1,6 +1,7 @@
   Enter in info about a target, and the script will fill out the most common commands for you! 
-  Example Output:   
-```# Zone transfer (Unlikely with AD)
+```
+ Example Output:   
+# Zone transfer (Unlikely with AD)
 dig axfr htb.local @10.10.10.161
 
 # Guest RID brute
