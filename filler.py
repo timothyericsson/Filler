@@ -90,7 +90,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # Write Powerview.py enumeration commands (only if creds are provided)
         if user and password:
             f.write("# Powerview.py enumeration\n")
-            f.write(f"faketime -f +7h getTGT.py {domain}/{user}:'{password}'\n")
+            f.write(f"faketime -f +7h impacket-getTGT {domain}/{user}:'{password}'\n")
             f.write(f"export KRB5CCNAME=./{user}.ccache\n")
             f.write(f"faketime -f +7h powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n")
             f.write("\n")
