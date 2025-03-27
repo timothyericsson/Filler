@@ -1,3 +1,4 @@
+#!/bin/python3
 import sys
 
 def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, password):
