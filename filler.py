@@ -38,7 +38,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         if user and password:
             f.write("# Authenticated RID brute\n")
             f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000\n")
-            f.write(f"impacket-lookupsid {domain}/{user}:'{password}'@{domain}\n")
+            f.write(f"impacket-lookupsid {domain}/{user}:'{password}'@{target_ip}\n")
             f.write("\n")
 
         # Write Kerbrute user enumeration command
@@ -120,6 +120,9 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write("# SMB Enumeration\n")
             f.write(f"sudo smbclient -N -L //{target_ip}\n")
             f.write(f"smbmap -u '' -p '' -H {target_ip}\n")
+            # Added example share connection command for no credentials
+            f.write("# Example Share Connection (without credentials)\n")
+            f.write(f"sudo smbclient //{target_ip}/example -N\n")
         f.write("\n")
 
         # Include WinRM Access command when creds are provided
