@@ -50,8 +50,10 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write("# RPC Enumeration\n")
         if user:
             f.write(f"rpcclient -U \"{user}\" -N {target_ip}\n")
+            f.write("cat dirty.txt | cut -b 7-999 | rev | cut -b 14-99 | rev > users.txt\n\n")
         else:
             f.write(f"rpcclient -U \"\" -N {target_ip}\n")
+            f.write("cat dirty.txt | cut -b 7-999 | rev | cut -b 14-99 | rev > users.txt\n\n")
         f.write("\n")
 
         # Write AS-Rep Roasting command
