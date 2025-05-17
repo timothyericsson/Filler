@@ -118,6 +118,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"netexec smb {target_ip} -u users.txt -p '{password}' --continue-on-success\n")
         else:
             f.write(f"netexec smb {target_ip} -u users.txt -p passwords.txt --continue-on-success\n")
+            f.write(f"netexec smb {target_ip} -u users.txt -p users.txt --continue-on-success\n")
         f.write("\n")
 
         #RemotePotato check commands
