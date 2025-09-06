@@ -90,9 +90,9 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         #Bloodhound Python command
         f.write("# Bloodhound Python ingestor\n")
         if user and password:
-            f.write(f"faketime -f +7h bloodhound-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
+            f.write(f"faketime -f +7h bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
         else:
-            f.write(f"faketime -f +7h bloodhound-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
+            f.write(f"faketime -f +7h bloodhound-ce-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
         f.write("\n")
 
         #Powerview.py enumeration commands (only if creds are provided)
