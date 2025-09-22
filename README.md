@@ -11,4 +11,4 @@
               TIME SINCE  2024
 
 
-  Enter info about a target, and the script will fill out the most common initial enumeration commands for you! 
+  Enter info about a target, and the script will fill out the most common initial AD enumeration commands for you! 
