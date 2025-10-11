@@ -32,12 +32,17 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # RID brute force
         if not has_creds:
             f.write("# Guest RID brute\n")
-            f.write(f"netexec smb {domain} -u anonymous -p '' --rid-brute 10000\n")
-            f.write(f"lookupsid.py {domain}/anonymous@{target_ip}\n\n")
+            f.write(f"netexec smb {domain} -u anonymous -p '' --rid-brute 10000 | tee rid.txt\n")
+            f.write(f"lookupsid.py {domain}/anonymous@{target_ip} | tee -a rid.txt\n")
         else:
             f.write("# Authenticated RID brute\n")
-            f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000\n")
-            f.write(f"lookupsid.py {domain}/{user}:'{password}'@{target_ip}\n\n")
+            f.write(f"netexec smb {domain} -u {user} -p '{password}' --rid-brute 10000 | tee rid.txt\n")
+            f.write(f"lookupsid.py {domain}/{user}:'{password}'@{target_ip} | tee -a rid.txt\n")
+
+        # Extract usernames and groups from RID output with sed
+        f.write("# Clean up RID results from rid.txt\n")
+        f.write(r"sed -n 's/.*\\\([^ ]*\) (SidTypeUser).*/\1/p' rid.txt | sort -u > users.txt" + "\n")
+        f.write(r"sed -n 's/.*\\\([^ ]*\) (SidType\(Group\|Alias\)).*/\1/p' rid.txt | sort -u > groups.txt" + "\n\n")
 
         # Kerbrute user enumeration
         f.write("# Kerbrute user enumeration\n")
