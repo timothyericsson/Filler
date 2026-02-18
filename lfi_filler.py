@@ -11,6 +11,8 @@ home = f"/home/{username}"
 paths = [
     # SSH-related
     f"{home}/.ssh/id_rsa",
+    f"{home}/.ssh/id_ecdsa",
+    f"{home}/.ssh/id_ecdsa_sk",
     f"{home}/.ssh/id_dsa",
     f"{home}/.ssh/id_ed25519",
     f"{home}/.ssh/identity",
