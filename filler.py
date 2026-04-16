@@ -190,7 +190,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
             f.write("# Check for ADCS\n")
             f.write(f"netexec ldap {target_ip} -u {user} -p '{password}' -M adcs\n\n")
             f.write("# Check for bad templates\n")
-            f.write(f"certipy find -scheme ldap -u {user}@{domain} -p '{password}' -target {hostname}.{domain} -dc-ip {target_ip} -vulnerable -stdout\n\n")
+            f.write(f"certipy find -ldap-scheme ldap -u {user}@{domain} -p '{password}' -target {hostname}.{domain} -dc-ip {target_ip} -vulnerable -stdout\n\n")
 
         # Try MSSQL
         if has_creds:
