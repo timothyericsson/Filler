@@ -26,7 +26,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         has_creds = bool(user and password)
 
         # Zone transfer
-        f.write("# Zone transfer (Unlikely with AD)\n")
+        f.write("# Zone transfer\n")
         f.write(f"dig axfr {domain} @{target_ip}\n\n")
 
         # RID brute force
