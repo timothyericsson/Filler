@@ -91,6 +91,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write(f"ldapsearch -x -H ldap://{target_ip} -b \"{base_dn}\" | grep 'userPrincipalName' | tr '@' ' ' | awk '{{print $2}}' > users.txt\n\n")
 
         # Authenticated LDAP enumeration
+        # Authenticated LDAP Enumeration
         if has_creds:
             f.write("# Authenticated LDAP Enumeration\n")
             f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\"\n\n")
@@ -106,12 +107,6 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
 
             f.write("# LDAP - Enumerate domain admins\n")
             f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(memberOf=CN=Domain Admins,CN=Users,{base_dn})' sAMAccountName\n\n")
-
-            f.write("# LDAP - Find disabled accounts\n")
-            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(userAccountControl:1.2.840.113556.1.4.803:=2)' sAMAccountName\n\n")
-
-            f.write("# LDAP - Find computers in the domain\n")
-            f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(objectClass=computer)' name operatingSystem\n\n")
 
             f.write("# LDAP - Check for LAPS (Local Admin Password Solution)\n")
             f.write(f"ldapsearch -x -H ldap://{target_ip} -D '{user}@{domain}' -w '{password}' -b \"{base_dn}\" '(ms-MCS-AdmPwd=*)' ms-MCS-AdmPwd ms-Mcs-AdmPwdExpirationTime sAMAccountName\n\n")
