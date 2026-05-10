@@ -1,10 +1,12 @@
+```
  ██████╗██╗   ██╗██╗  ██╗███╗   ███╗
 ██╔════╝╚██╗ ██╔╝██║  ██║████╗ ████║
 ██║      ╚████╔╝ ███████║██╔████╔██║
 ██║       ╚██╔╝  ██╔══██║██║╚██╔╝██║
 ╚██████╗   ██║   ██║  ██║██║ ╚═╝ ██║
  ╚═════╝   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝
-    F I L L E R  //  C Y H M  &  B E Y O N D
+    N O T E S  //  C Y H M  &  B E Y O N D
+```
 
 Filler is a small Python helper for Active Directory labs, CTFs, and other assessments. Give it the target basics once, and it writes an `output.txt` file with common first-pass enumeration commands already filled in for that domain.
 
