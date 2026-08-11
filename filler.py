@@ -43,7 +43,7 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         f.write(r"sed -n 's/.*\\\([^ ]*\) (SidTypeUser).*/\1/p' rid.txt | sort -u > users.txt" + "\n")
         f.write(r"sed -n 's/.*\\\([^ ]*\) (SidType\(Group\|Alias\)).*/\1/p' rid.txt | sort -u > groups.txt" + "\n\n")
 
-        # Kerbrute user enumeration
+        # Kerbrute user enumeration - If it says wrong flag, you probably have a bad version! Grab it from github!
         f.write("# Kerbrute user enumeration\n")
         f.write(f"kerbrute userenum -d {domain} /usr/share/seclists/Usernames/xato-net-10-million-usernames.txt --dc {target_ip}\n\n")
 
