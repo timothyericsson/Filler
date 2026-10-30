@@ -118,7 +118,8 @@ def create_ad_enumeration_file(target_ip, hostname, domain, local_ip, user, pass
         # Bloodhound CE Python
         if has_creds:
             f.write("# Bloodhound CE Python ingestor\n")
-            f.write(f"bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n\n")
+            f.write(f"bloodhound-ce-python -c ALL -u '{user}' -p '{password}' -d {domain} -dc {hostname}.{domain} -ns {target_ip}\n")
+            f.write(f"rusthound-ce -c 'All' -u '{user}' -p '{password}' -d {domain}\n\n")
 
         # Powerview.py enumeration
         if has_creds:
